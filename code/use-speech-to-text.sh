@@ -13,6 +13,9 @@ export S2T_URL=""
 export CUSTOM_MODEL_JSON=mymodel-1.json
 export CUSTOM_MODEL_ID_JSON=customization_id.json
 export SIMPLE_AUDIO_FLAC=my-s2t-audio.flac
+export DRUMS_TEXT=drums.txt
+export DRUMS_AUDIO=drums.flac
+export CORPUS_NAME=drums1
 
 # **********************************************************************************
 # Functions definition
@@ -25,7 +28,7 @@ function loginIBMCloud () {
     ibmcloud target
 }
 
-function getToken() {
+function getAPIKey() {
     TEMPFILE=temp-s2t.json
     REQUESTMETHOD=POST
     export OAUTHTOKEN=$(ibmcloud iam oauth-tokens | awk '{print $4;}')
@@ -46,16 +49,27 @@ function getEnUSBroadbandModel () {
    curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/models" | grep "en-US_BroadbandModel"
 }
 
+
 function sendDefaultAudio () {
    curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$SIMPLE_AUDIO_FLAC" "$S2T_URL/v1/recognize"
 }
 
-# ********************************
+#*********************************
+#        Customized models
+#*********************************
+
+function getAllCustomizedModels () {
+   curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations"
+}
+
+# -------------------------
 # Create a custom language model by extending an existing model
 # "en-US_BroadbandModel"
+# -------------------------
 
 function createCustomLanguageModel () {
     export customization_id=$(curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: application/json" --data  @$ROOTFOLDER/code/$CUSTOM_MODEL_JSON "$S2T_URL/v1/customizations")
+    echo ""
     echo "customization_id: $customization_id"
     echo $customization_id > $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON
 }
@@ -63,21 +77,113 @@ function createCustomLanguageModel () {
 function deleteCustomLanguageModel () {
     export CUSTOM_MODEL_ID_JSON=customization_id.json
     export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+    echo ""
     echo  "Delete 'customization_id': $customization_id"
     curl -X DELETE -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id"
+}
+
+#*********************************
+#        Corpora
+#*********************************
+
+function createCorpora () {
+    export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+    curl -X POST -u "apikey:$S2T_APIKEY" --data-binary @"$ROOTFOLDER/code/$DRUMS_TEXT"  "$S2T_URL/v1/customizations/$customization_id/corpora/$CORPUS_NAME"
+
+    STATUS='being_processed'
+    TIME=10
+
+    while [ "$STATUS" != 'analyzed' ]; do
+        sleep 10
+        RESPONSE=$(curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/corpora/$CORPUS_NAME")
+        echo "Response: $RESPONSE"
+        STATUS=$(echo $RESPONSE | sed -e 's/.*\"status\": \"\([^\"]*\)\".*/\1/')
+        echo "Status: %-15s ( %d )\n" "$STATUS" $TIME
+        let "TIME += 10"
+    done
+}
+
+function listCorpora () {
+    export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+    curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/corpora"
+}
+
+function deleteCorpora () {
+    export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+    echo ""
+    echo "Delete 'customization_id' 'corpus_name': $customization_id $CORPUS_NAME"
+    curl -X DELETE -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/corpora/$CORPUS_NAME"
+}
+
+#*********************************
+#        Train the model
+#*********************************
+
+function trainCustomLanguageModel () {
+    export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+    echo ""
+    echo "Train ..."
+    curl -X POST -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/train"
+}
+
+#*********************************
+#       Verify the model
+#*********************************
+
+function verifyCustomLanguageModel () {
+   export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+   echo ""
+   echo "Test audio ..."
+   curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$DRUMS_AUDIO" "$S2T_URL/v1/customizations/$customization_id/v1/recognize?customization_id=$customization_id"
 }
 
 # **********************************************************************************
 # Execution
 # **********************************************************************************
 
+echo "#*******************"
+echo "# Connect to IBM Cloud and"
+echo "# get the Speech to Text API key"
+echo "#*******************"
+
 loginIBMCloud
 
-getToken
+getAPIKey
 
-getEnUSBroadbandModel
+echo "#*******************"
+echo "# Verify a basic audio"
+echo "#*******************"
+
+#sendDefaultAudio
+
+#getEnUSBroadbandModel
+
+echo "#*******************"
+echo "# Create and train a Custom Language Model"
+echo "#*******************"
 
 #createCustomLanguageModel
-#deleteCustomLanguageModel
 
-sendDefaultAudio
+#getAllCustomizedModels
+
+#createCorpora
+
+#listCorpora
+
+#trainCustomLanguageModel
+
+echo "#*******************"
+echo "# Verify a trained model by using an audio"
+echo "#*******************"
+
+#verifyCustomLanguageModel
+
+echo "#*******************"
+echo "# Delete the created customizations"
+echo "#*******************"
+
+deleteCorpora
+
+deleteCustomLanguageModel
+
+

@@ -2,12 +2,14 @@
 
 # **************** Global variables
 
-source .env
+source ./code/.env
 
 export OAUTHTOKEN=""
 export IBMCLOUD_APIKEY=$APIKEY
 export T_RESOURCEGROUP=$RESOURCE_GROUP
 export T_REGION=$REGION
+export S2T_APIKEY=""
+export S2T_URL=""
 
 # **********************************************************************************
 # Functions definition
@@ -28,14 +30,13 @@ function getToken() {
     
     ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME
     ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME --output json
-    ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME --output json > $ROOTFOLDER/temp-s2t.json
-    INSTANCE_ID=$(ibmcloud resource service-keys --instance-name $T2S_SERVICE_INSTANCE_NAME --output json | grep "guid" | awk '{print $2;}' | head -n 1 | sed 's/"//g' | sed 's/,//g')
-    #curl -X $REQUESTMETHOD -u "apikey:$IBMCLOUD_APIKEY" "https://api.us-south.assistant.watson.cloud.ibm.com/instances/$INSTANCE_ID"
-    #curl -X POST -header "Content-Type: application/x-www-form-urlencoded" -data "grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey=$IBMCLOUD_APIKEY" "https://iam.cloud.ibm.com/identity/token"
+    ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME --output json > $ROOTFOLDER/code/$TEMPFILE
+    export S2T_APIKEY=$(cat $ROOTFOLDER/code/$TEMPFILE | jq '.[0].credentials.apikey' | sed 's/"//g')
+    export S2T_URL=$(cat $ROOTFOLDER/code/$TEMPFILE | jq '.[0].credentials.url' | sed 's/"//g')
 }
 
 function getModels () {
-   curl -X GET -u "apikey:{apikey}" "{url}/v1/models"
+   curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/models"
 }
 
 # **********************************************************************************
@@ -46,4 +47,4 @@ loginIBMCloud
 
 getToken
 
-# getModels
+getModels

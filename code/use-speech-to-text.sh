@@ -31,8 +31,6 @@ function loginIBMCloud () {
 function getAPIKey() {
     TEMPFILE=temp-s2t.json
     REQUESTMETHOD=POST
-    export OAUTHTOKEN=$(ibmcloud iam oauth-tokens | awk '{print $4;}')
-    echo "OAUTHTOKEN: $OAUTHTOKEN"
     
     ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME
     ibmcloud resource service-keys --instance-name $S2T_SERVICE_INSTANCE_NAME --output json
@@ -48,7 +46,6 @@ function getAllModels () {
 function getEnUSBroadbandModel () {
    curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/models" | grep "en-US_BroadbandModel"
 }
-
 
 function sendDefaultAudio () {
    curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$SIMPLE_AUDIO_FLAC" "$S2T_URL/v1/recognize"
@@ -117,13 +114,31 @@ function deleteCorpora () {
 
 #*********************************
 #        Train the model
+#  Information: https://cloud.ibm.com/docs/speech-to-text?topic=speech-to-text-languageCreate#trainModel-language
 #*********************************
 
 function trainCustomLanguageModel () {
     export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
     echo ""
     echo "Train ..."
+
     curl -X POST -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/train"
+    
+    STATUS='pending'
+    TIME=10
+
+    while [ "$STATUS" != 'available' ]; do
+        sleep 10
+        RESPONSE=$(curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id")
+        echo "Response: $RESPONSE"
+        STATUS=$(echo $RESPONSE | sed -e 's/.*\"status\": \"\([^\"]*\)\".*/\1/')
+        echo "Status ($STATUS)"
+        echo "Status: %-15s ( %d )\n" "$STATUS" $TIME
+        let "TIME += 10"
+    done
+
+    curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id/words"
+    curl -X GET -u "apikey:$S2T_APIKEY" "$S2T_URL/v1/customizations/$customization_id"
 }
 
 #*********************************
@@ -132,9 +147,36 @@ function trainCustomLanguageModel () {
 
 function verifyCustomLanguageModel () {
    export customization_id=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON | jq '.customization_id' | sed 's/"//g')
+   export basic_model=$(cat $ROOTFOLDER/code/$CUSTOM_MODEL_JSON | jq '.base_model_name' | sed 's/"//g')
+   
+   echo "customization_id: $customization_id"
+   echo "basic_model: $basic_model"
    echo ""
    echo "Test audio ..."
-   curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$DRUMS_AUDIO" "$S2T_URL/v1/customizations/$customization_id/v1/recognize?customization_id=$customization_id"
+   curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$DRUMS_AUDIO" "$S2T_URL/v1/recognize?model=${basic_model}&language_customization_id=$customization_id"
+}
+
+function customizationFlow() {
+
+    echo "#*******************"
+    echo "# Create and train a Custom Language Model"
+    echo "#*******************"
+    createCustomLanguageModel
+    getAllCustomizedModels
+    createCorpora
+    listCorpora
+    trainCustomLanguageModel
+    echo "#*******************"
+    echo "# Verify a trained model by using an audio"
+    echo "#*******************"
+    verifyCustomLanguageModel
+
+}
+
+function deleteAll () {
+   deleteCorpora
+   deleteCustomLanguageModel
+   rm $ROOTFOLDER/code/$CUSTOM_MODEL_ID_JSON
 }
 
 # **********************************************************************************
@@ -159,31 +201,17 @@ echo "#*******************"
 #getEnUSBroadbandModel
 
 echo "#*******************"
-echo "# Create and train a Custom Language Model"
-echo "#*******************"
-
-#createCustomLanguageModel
-
-#getAllCustomizedModels
-
-#createCorpora
-
-#listCorpora
-
-#trainCustomLanguageModel
-
-echo "#*******************"
-echo "# Verify a trained model by using an audio"
-echo "#*******************"
-
-#verifyCustomLanguageModel
-
-echo "#*******************"
 echo "# Delete the created customizations"
 echo "#*******************"
 
-deleteCorpora
+deleteAll
 
-deleteCustomLanguageModel
+echo "#*******************"
+echo "# Customization flow"
+echo "#*******************"
+
+customizationFlow
+
+
 
 

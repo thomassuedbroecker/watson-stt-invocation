@@ -156,20 +156,31 @@ function verifyCustomLanguageModel () {
    curl -X POST -u "apikey:$S2T_APIKEY" --header "Content-Type: audio/flac" --data-binary @"$ROOTFOLDER/code/$DRUMS_AUDIO" "$S2T_URL/v1/recognize?model=${basic_model}&language_customization_id=$customization_id"
 }
 
+#*********************************
+#       Flows
+#*********************************
+
 function customizationFlow() {
 
-    echo "#*******************"
+    echo "#------------------"
     echo "# Create and train a Custom Language Model"
-    echo "#*******************"
+    echo "#------------------"
     createCustomLanguageModel
     getAllCustomizedModels
     createCorpora
     listCorpora
     trainCustomLanguageModel
-    echo "#*******************"
+    echo "#------------------"
     echo "# Verify a trained model by using an audio"
-    echo "#*******************"
+    echo "#------------------"
     verifyCustomLanguageModel
+
+}
+
+function basicFlow() {
+
+  sendDefaultAudio
+  getEnUSBroadbandModel
 
 }
 
@@ -189,16 +200,7 @@ echo "# get the Speech to Text API key"
 echo "#*******************"
 
 loginIBMCloud
-
 getAPIKey
-
-echo "#*******************"
-echo "# Verify a basic audio"
-echo "#*******************"
-
-#sendDefaultAudio
-
-#getEnUSBroadbandModel
 
 echo "#*******************"
 echo "# Delete the created customizations"
@@ -211,6 +213,12 @@ echo "# Customization flow"
 echo "#*******************"
 
 customizationFlow
+
+echo "#*******************"
+echo "# Basic flow"
+echo "#*******************"
+
+basicFlow
 
 
 

@@ -15,20 +15,22 @@ _Note:_ If you record your own voice for example in a [M4A format](https://en.wi
 * A [Watson Text to Speech](https://cloud.ibm.com/catalog/services/speech-to-text#about) service with an [Plus plan](https://cloud.ibm.com/docs/billing-usage?topic=billing-usage-changing&interface=ui) is created.
 * Install the cURL command line on the local computer
 
-### Clone the project
+Just execute following steps to run the example.
+
+### Step 1: Clone the project
 
 ```sh
 git clone https://github.com/thomassuedbroecker/watson-stt-invocation.git
 cd watson-stt-invocation
 ```
 
-### Configure the `.env` file
+### Step 2: Configure the `.env` file
 
 ```sh
 cp ./code/.env-template ./code/.env
 ```
 
-### Set the correct values in the `.env` file
+### Step 3: Set the correct values in the `.env` file
 
 * [Create an IBM Cloud APIKEY](https://www.ibm.com/docs/en/app-connect/containers_cd?topic=servers-creating-cloud-api-key)
 
@@ -40,7 +42,7 @@ APIKEY="YOUR_IBMCLOUD_APIKEY"
 S2T_SERVICE_INSTANCE_NAME="YOUR_S2T_SERVICE_NAME"
 ```
 
-### Invoke the bash automation
+### Step 4: Invoke the bash automation
 
 ```sh
 sh code/use-speech-to-text.sh
@@ -222,7 +224,9 @@ Test audio ...
 } 
 ...
 ```
-### Use API calls
+### Additional information
+
+List of used API calls:
 
 * [recognize](https://cloud.ibm.com/apidocs/speech-to-text#recognize)
 * [models](https://cloud.ibm.com/apidocs/speech-to-text#listmodels)

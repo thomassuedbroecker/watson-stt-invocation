@@ -1,11 +1,11 @@
-# watson-s2t-invocation
+# Watson STT invocation
 
-This project contains a bash script automation example for Watson Speech to Text service.
+This project contains a bash script automation example for the IBM Cloud Watson Speech to Text service.
 
 The automation contains two flows:
 
-1. Basic usage for extract the text from an audio saved in [FLAC format](https://simple.wikipedia.org/wiki/FLAC) using a base uncustomized model.
-2. Customization of a language model for a domain
+1. Basic usage for extract the text from an audio saved in [FLAC format](https://simple.wikipedia.org/wiki/FLAC) using a base language model.
+2. Customization of an existing language model for a domain in this example for drums ;-) 
 
 _Note:_ If you record your own voice for example in a [M4A format](https://en.wikipedia.org/wiki/MP4_file_format) here is a possibiltiy to convert M4A to [FLAC format](https://simple.wikipedia.org/wiki/FLAC) for free with [Converio](https://convertio.co/m4a-flac/).
 

@@ -18,8 +18,8 @@ _Note:_ If you record your own voice for example in a [M4A format](https://en.wi
 ### Clone the project
 
 ```sh
-git clone https://github.com/thomassuedbroecker/watson-s2t-invocation.git
-cd watson-s2t-invocation
+git clone https://github.com/thomassuedbroecker/watson-stt-invocation.git
+cd watson-stt-invocation
 ```
 
 ### Configure the `.env` file

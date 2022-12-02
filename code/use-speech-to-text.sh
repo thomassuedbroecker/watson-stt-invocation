@@ -23,8 +23,8 @@ export CORPUS_NAME=drums1
 
 function loginIBMCloud () {
     ibmcloud login  --apikey $IBMCLOUD_APIKEY
-    ibmcloud target -g $T_RESOURCEGROUP
     ibmcloud target -r $T_REGION
+    ibmcloud target -g $T_RESOURCEGROUP
     ibmcloud target
 }
 

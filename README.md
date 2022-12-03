@@ -1,5 +1,7 @@
 # Watson STT invocation
 
+Related blog post[WATSON SPEECH TO TEXT LANGUAGE MODEL CUSTOMIZATION](https://suedbroecker.net/2022/11/19/watson-speech-to-text-language-model-customization/).
+
 This project contains a bash script automation example for the IBM Cloud Watson Speech to Text service.
 
 The automation contains two flows:
@@ -187,7 +189,8 @@ Test audio ...
          ]
       }
    ]
-}#*******************
+}
+#*******************
 # Basic flow
 #*******************
 {
